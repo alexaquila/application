@@ -13,23 +13,23 @@ END_DIR = os.path.join("documents", "end")
 CONTENT_DIR = os.path.join("documents", "content")
 
 
-
-def create_pdf(slug: str, tex: str) -> str:
+def create_pdf(slug: str, tex: str, verbose: bool) -> str:
     with open(f"out/tmp/{slug}.tex", "w") as f:
         f.write(tex)
         print(f"Rendered {slug}")
 
-    subprocess.call(
-        [
-            "pdflatex",
-            #  "-halt-on-error",
-            "-interaction=nonstopmode",
-            "-output-directory=out/tmp",
-            f"out/tmp/{slug}.tex",
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
-    )
+    verbose_params = ["-halt-on-error"] if verbose else ["-interaction=nonstopmode"]
+
+    params = [
+        "pdflatex",
+        *verbose_params,
+        "-output-directory=out/tmp",
+        f"out/tmp/{slug}.tex",
+    ]
+    if verbose:
+        subprocess.call(params)
+    else:
+        subprocess.call(params, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
     target_path = f"out/{slug}.pdf"
     # Copy the resulting pdf to the out directory
@@ -38,10 +38,13 @@ def create_pdf(slug: str, tex: str) -> str:
 
 
 def get_nested_dirs(dir: str, overrides: List[str]) -> List[str]:
-    return [dir] + [nested_dir for override in overrides
+    return [dir] + [
+        nested_dir
+        for override in overrides
         if os.path.isdir(os.path.join(dir, override))
         for nested_dir in get_nested_dirs(os.path.join(dir, override), overrides)
     ]
+
 
 """
 Idea here:
@@ -53,15 +56,12 @@ Idea here:
     
 """
 
+
 def get_dir_content_with_overrides(root_dir: str, overrides: List[str]) -> str:
     # get recursively all subdirectories matching overrides
     # later overrides take precedence ä
 
-
-
     all_dirs = get_nested_dirs(root_dir, overrides)
-    
-
 
     paths_by_file = {}
 
@@ -71,22 +71,22 @@ def get_dir_content_with_overrides(root_dir: str, overrides: List[str]) -> str:
 
             if not os.path.isdir(path) and path.endswith(".tex"):
                 paths_by_file[file] = path
-    
-    print(f"Path by file: {paths_by_file}")
 
 
     return "\n".join(["\input{" + path + "}" for path in paths_by_file.values()])
 
 
-def create_content(content_name: str, job_name: str, overrides: List[str]) -> str:
-    overrides = [content_name] + overrides 
+def create_content(
+    content_name: str, job_name: str, overrides: List[str], verbose: bool
+) -> str:
+    overrides = [content_name] + overrides
     content = "\n\n".join(
         get_dir_content_with_overrides(dir, overrides)
         for dir in [BEGIN_DIR, CONTENT_DIR, END_DIR]
     )
 
     slug = f"{job_name}_{content_name}"
-    export_path = create_pdf(slug, content)
+    export_path = create_pdf(slug, content, verbose)
     return export_path
 
 
@@ -94,23 +94,24 @@ def render_application(*parameters: str):
     overrides = list(filter(lambda x: not x.startswith("-"), parameters))
 
     unite = "-unite" in parameters or "-u" in parameters
+    verbose = "-verbose" in parameters or "-v" in parameters
 
+    print(f"Run verbose: {verbose}, Unite: {unite}, Overrides: {overrides}")
     job_name = "default" if len(overrides) == 0 else "-".join(overrides)
 
     content_names = [os.path.basename(content) for content in os.listdir(CONTENT_DIR)]
 
     exported_paths = [
-        create_content(content_name, job_name, overrides)
+        create_content(content_name, job_name, overrides, verbose)
         for content_name in content_names
     ]
-
 
     if unite:
         subprocess.call(
             [
                 "pdfunite",
                 *exported_paths,
-                #*references,
+                # *references,
                 f"documents/out/{job_name}_application.pdf",
             ],
         )
