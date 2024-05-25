@@ -1,1 +1,8 @@
 *.pdf
+*.out
+*.fls
+*.log
+*.aux
+*.gz
+*'tex
+tmp/*
