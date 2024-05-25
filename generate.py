@@ -73,7 +73,12 @@ def get_dir_content_with_overrides(root_dir: str, overrides: List[str]) -> str:
                 paths_by_file[file] = path
 
 
-    return "\n".join(["\input{" + path + "}" for path in paths_by_file.values()])
+    paths = [paths_by_file[key] for key in sorted(paths_by_file.keys())]
+    for path in paths:
+        assert os.path.isfile(path)
+        assert path.endswith(".tex")
+
+    return "\n".join(["\input{" + path + "}" for path in paths])
 
 
 def create_content(
