@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 from typing import List
-from pypdf import PdfMerger
+from pypdf import PdfWriter
 
 import sys
 
@@ -84,7 +84,7 @@ def get_dir_content_with_overrides(root_dir: str, overrides: List[str]) -> str:
         assert os.path.isfile(path)
         assert path.endswith(".tex")
 
-    return "\n".join(["\input{" + path + "}" for path in paths])
+    return "\n".join(["\\input{" + path + "}" for path in paths])
 
 
 def create_content(
@@ -129,12 +129,12 @@ def create_united_content(
     job_name: str, exported_paths: List[str], supplements: List[str]
 ):
 
-    with PdfMerger() as merger:
+    with PdfWriter() as writer:
         for pdf in exported_paths + supplements:
-            merger.append(pdf)
+            writer.append(pdf)
 
         path = os.path.join(OUTPUT_DIR, f"{job_name}_application.pdf")
-        merger.write(path)
+        writer.write(path)
 
 
 def render_application(*parameters: str):
