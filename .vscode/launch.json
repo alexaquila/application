@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "generate.py",
             "console": "integratedTerminal",
-            "args": ["personal"]
+            "args": ["personal","-u"]
         }
     ]
 }
