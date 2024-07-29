@@ -21,6 +21,8 @@ TMP_DIR = f"{OUTPUT_DIR}/tmp"
 
 def create_pdf(slug: str, tex: str, verbose: bool) -> str:
     tex_path = os.path.join(TMP_DIR, f"{slug}.tex")
+    if not os.path.exists(TMP_DIR):
+        os.makedirs(TMP_DIR)
     with open(tex_path, "w") as f:
         f.write(tex)
         print(f"Rendered {slug}")
